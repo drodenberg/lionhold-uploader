@@ -1,5 +1,6 @@
 # Builds the Windows and Mac installers and publishes a GitHub release, including latest.json for self-updates.
 # Run: bump the version in src-tauri/tauri.conf.json and package.json, then push a tag like v0.1.1.
+# The release stays a draft until both platforms are built, so the site and the updater never see a half release.
 #
 # Secrets:
 #   TAURI_SIGNING_PRIVATE_KEY           update signing key (required; updates are verified against the app's pubkey)
@@ -69,6 +70,7 @@ jobs:
           releaseBody: Download from https://lionhold-armory.drodenberg92.workers.dev/uploader
           args: ${{ matrix.args }}
           includeUpdaterJson: true
+          releaseDraft: true
 
       - name: Build
         if: matrix.platform != 'macos-latest' || env.HAS_APPLE != 'true'
@@ -83,3 +85,13 @@ jobs:
           releaseBody: Download from https://lionhold-armory.drodenberg92.workers.dev/uploader
           args: ${{ matrix.args }}
           includeUpdaterJson: true
+          releaseDraft: true
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the release now that both platforms are attached
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --draft=false --latest
