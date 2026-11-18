@@ -61,50 +61,63 @@ local function character()
   c.race = raceToken
   c.faction = UnitFactionGroup("player")
   c.realm = GetRealmName and GetRealmName() or ""
-  c.guild = (GetGuildInfo and GetGuildInfo("player")) or ""
+  -- The guild name isn't known for a few seconds after login; keep the last one we saw.
+  local guild = GetGuildInfo and GetGuildInfo("player")
+  if guild and guild ~= "" then c.guild = guild elseif c.guild == nil then c.guild = "" end
   return c
 end
 
+-- Right after login and during logout the game reports empty bags (size 0). Such a read is never saved, so it can't
+-- replace real data. The backpack always has 16 slots once inventory has loaded.
 local function scanBags()
+  if (GetNumSlots(0) or 0) == 0 then return false end
   local c = character()
-  if not c then return end
-  c.bags = {}
+  if not c then return false end
+  local bags = {}
   for bag = 0, NUM_BAGS do
-    c.bags[bag + 1] = scanContainer(bag)
-    c.bags[bag + 1].bag = bag
+    bags[bag + 1] = scanContainer(bag)
+    bags[bag + 1].bag = bag
   end
+  c.bags = bags
   c.bagsAt = time()
+  return true
 end
 
 -- The bank can only be read while the bank window is open, so it is saved on each visit.
 local function scanBank()
-  local c = character()
-  if not c then return end
-  c.bank = {}
   local main = scanContainer(BANK_MAIN)
+  if main.size == 0 then return false end
+  local c = character()
+  if not c then return false end
   main.bag = BANK_MAIN
-  c.bank[1] = main
+  local bank = { main }
   for bag = NUM_BAGS + 1, NUM_BAGS + NUM_BANK_BAGS do
     local scanned = scanContainer(bag)
     scanned.bag = bag
-    c.bank[#c.bank + 1] = scanned
+    bank[#bank + 1] = scanned
   end
+  c.bank = bank
   c.bankAt = time()
+  return true
 end
 
 local function scanEquipment()
-  local c = character()
-  if not c then return end
-  c.equipped = {}
+  local equipped = {}
   for slot = 1, 19 do
     local link = GetInventoryItemLink("player", slot)
     local id = GetInventoryItemID and GetInventoryItemID("player", slot) or (link and tonumber(link:match("item:(%d+)")))
     if id then
       local quality = GetInventoryItemQuality and GetInventoryItemQuality("player", slot) or -1
-      c.equipped[#c.equipped + 1] = table.concat({ slot, id, quality or -1, clean(nameFromLink(link)) }, "\t")
+      equipped[#equipped + 1] = table.concat({ slot, id, quality or -1, clean(nameFromLink(link)) }, "\t")
     end
   end
+  -- Nothing equipped at all means the game hasn't loaded gear yet (or is logging out).
+  if #equipped == 0 then return false end
+  local c = character()
+  if not c then return false end
+  c.equipped = equipped
   c.equipAt = time()
+  return true
 end
 
 local B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -208,30 +221,39 @@ local function showExport()
   exportFrame.box:HighlightText()
 end
 
+local function after(seconds, fn)
+  if C_Timer and C_Timer.After then C_Timer.After(seconds, fn) else fn() end
+end
+
 local frame = CreateFrame("Frame")
-frame:RegisterEvent("PLAYER_LOGIN")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("BAG_UPDATE_DELAYED")
 frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 frame:RegisterEvent("BANKFRAME_OPENED")
 frame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
+frame:RegisterEvent("PLAYER_GUILD_UPDATE")
 frame:RegisterEvent("PLAYER_LOGOUT")
 local bankOpen = false
 frame:SetScript("OnEvent", function(_, event)
-  if event == "PLAYER_LOGIN" then
-    scanAll()
+  if event == "PLAYER_ENTERING_WORLD" then
+    -- Inventory and guild info arrive a moment after entering the world.
+    after(3, scanAll)
+    after(15, scanAll)
   elseif event == "BAG_UPDATE_DELAYED" then
     scanBags()
     if bankOpen then scanBank() end
   elseif event == "PLAYER_EQUIPMENT_CHANGED" then
     scanEquipment()
+  elseif event == "PLAYER_GUILD_UPDATE" then
+    character()
   elseif event == "BANKFRAME_OPENED" then
     bankOpen = true
-    scanBank()
+    after(0.5, scanBank)
   elseif event == "PLAYERBANKSLOTS_CHANGED" then
     if bankOpen then scanBank() end
   elseif event == "PLAYER_LOGOUT" then
-    -- SavedVariables are written right after this, so the upload file always has a fresh export string.
-    scanAll()
+    -- Don't scan here: the game has already emptied the inventory. Just package what was read during play;
+    -- SavedVariables are written right after this event.
     buildExport()
   end
 end)
@@ -246,6 +268,16 @@ SlashCmdList.LIONHOLD = function(msg)
   msg = (msg or ""):lower():match("^%s*(.-)%s*$")
   if msg == "export" then
     showExport()
+  elseif msg == "debug" then
+    local api = (C_Container and C_Container.GetContainerItemInfo) and "C_Container" or (GetContainerItemInfo and "global" or "none")
+    local sizes = {}
+    for bag = 0, NUM_BAGS do sizes[#sizes + 1] = tostring(GetNumSlots(bag) or "nil") end
+    local c = character()
+    print("|cffd4a84aLionhold Export debug|r: API " .. api .. ", bag sizes " .. table.concat(sizes, "/") ..
+      ", saved bags " .. ((c and c.bagsAt) and date("%H:%M:%S", c.bagsAt) or "never") ..
+      ", bank " .. ((c and c.bankAt) and date("%H:%M:%S", c.bankAt) or "never") ..
+      ", gear " .. ((c and c.equipAt) and date("%H:%M:%S", c.equipAt) or "never") ..
+      ", guild " .. ((c and c.guild ~= "" and c.guild) or "none"))
   else
     local c = character()
     local db = LionholdExportDB

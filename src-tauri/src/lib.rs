@@ -255,7 +255,7 @@ async fn sync_once(app: &AppHandle, force: bool) {
                     });
                     let mut m = format!("Uploaded {} character{}", res.saved.len(), if res.saved.len() == 1 { "" } else { "s" });
                     if !res.skipped.is_empty() {
-                        m.push_str(&format!(". Not matched: {} (pick them once on the website)", res.skipped.join(", ")));
+                        m.push_str(&format!(". Skipped: {}", res.skipped.join("; ")));
                     }
                     m
                 }
