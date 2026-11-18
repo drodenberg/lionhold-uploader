@@ -1,6 +1,6 @@
 [package]
 name = "lionhold-uploader"
-version = "0.1.3"
+version = "0.1.4"
 description = "Uploads your WoW Forever bags to Lionhold Armory after every logout"
 edition = "2021"
 

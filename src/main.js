@@ -74,6 +74,13 @@ $("share").addEventListener("change", async (e) => {
     $("message").className = "small error";
   }
 });
+$("check-updates").addEventListener("click", async () => {
+  $("check-updates").disabled = true;
+  $("check-updates").textContent = "Checking…";
+  render(await invoke("check_updates"));
+  $("check-updates").disabled = false;
+  $("check-updates").textContent = "Check for updates";
+});
 $("disconnect").addEventListener("click", async () => render(await invoke("disconnect")));
 $("upload").addEventListener("click", async () => {
   $("upload").disabled = true;

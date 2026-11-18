@@ -39,6 +39,8 @@ struct Config {
 struct AppState {
     config: Mutex<Config>,
     linking: Mutex<Option<String>>,
+    /// The tray's "Check for updates" item, so its label can show progress.
+    update_item: Mutex<Option<MenuItem<tauri::Wry>>>,
 }
 
 #[derive(Serialize, Clone)]
@@ -515,16 +517,48 @@ async fn background(app: AppHandle) {
     }
 }
 
+fn set_update_label(app: &AppHandle, text: &str) {
+    let state: State<AppState> = app.state();
+    if let Some(item) = state.update_item.lock().unwrap().as_ref() {
+        let _ = item.set_text(text);
+    }
+}
+
+/// Checks for a newer version; if there is one, installs it and restarts. Returns what happened, for the window.
+async fn check_for_update(app: &AppHandle) -> String {
+    set_update_label(app, "Checking for updates…");
+    let result = match app.updater() {
+        Ok(updater) => match updater.check().await {
+            Ok(Some(update)) => {
+                set_update_label(app, &format!("Installing {}…", update.version));
+                update_config(app, |c| c.last_message = Some(format!("Installing version {}…", update.version)));
+                emit_status(app);
+                match update.download_and_install(|_, _| {}, || {}).await {
+                    Ok(_) => app.restart(),
+                    Err(_) => "The update didn't install. Will try again later.".to_string(),
+                }
+            }
+            Ok(None) => format!("You're up to date (version {}).", app.package_info().version),
+            Err(_) => "Couldn't check for updates. Will try again later.".to_string(),
+        },
+        Err(_) => "Updates aren't available in this build.".to_string(),
+    };
+    set_update_label(app, "Check for updates");
+    result
+}
+
+#[tauri::command]
+async fn check_updates(app: AppHandle) -> Status {
+    let message = check_for_update(&app).await;
+    update_config(&app, |c| c.last_message = Some(message));
+    emit_status(&app);
+    status(&app)
+}
+
 async fn keep_updated(app: AppHandle) {
     tokio_sleep(Duration::from_secs(20)).await;
     loop {
-        if let Ok(updater) = app.updater() {
-            if let Ok(Some(update)) = updater.check().await {
-                if update.download_and_install(|_, _| {}, || {}).await.is_ok() {
-                    app.restart();
-                }
-            }
-        }
+        let _ = check_for_update(&app).await;
         tokio_sleep(UPDATE_EVERY).await;
     }
 }
@@ -538,10 +572,14 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![get_status, set_wow_dir, upload_now, disconnect, connect, set_share])
+        .invoke_handler(tauri::generate_handler![get_status, set_wow_dir, upload_now, disconnect, connect, set_share, check_updates])
         .setup(|app| {
             let handle = app.handle().clone();
-            app.manage(AppState { config: Mutex::new(load_config(&handle)), linking: Mutex::new(None) });
+            app.manage(AppState {
+                config: Mutex::new(load_config(&handle)),
+                linking: Mutex::new(None),
+                update_item: Mutex::new(None),
+            });
 
             // A tray app: no Dock icon on macOS.
             #[cfg(target_os = "macos")]
@@ -553,16 +591,48 @@ pub fn run() {
                 update_config(&handle, |c| c.autostart_set = true);
             }
 
+            let version = MenuItem::with_id(
+                app,
+                "version",
+                format!("Lionhold Uploader {}", app.package_info().version),
+                false,
+                None::<&str>,
+            )?;
+            let updates = MenuItem::with_id(app, "updates", "Check for updates", true, None::<&str>)?;
+            {
+                let state: State<AppState> = app.state();
+                *state.update_item.lock().unwrap() = Some(updates.clone());
+            }
             let upload = MenuItem::with_id(app, "upload", "Upload now", true, None::<&str>)?;
             let site = MenuItem::with_id(app, "site", "Open Lionhold Armory", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&upload, &site, &settings, &PredefinedMenuItem::separator(app)?, &quit])?;
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &version,
+                    &updates,
+                    &PredefinedMenuItem::separator(app)?,
+                    &upload,
+                    &site,
+                    &settings,
+                    &PredefinedMenuItem::separator(app)?,
+                    &quit,
+                ],
+            )?;
             TrayIconBuilder::with_id("main")
                 .icon(app.default_window_icon().cloned().expect("app icon"))
                 .tooltip("Lionhold Uploader")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
+                    "updates" => {
+                        let h = app.clone();
+                        tauri::async_runtime::spawn(async move {
+                            let message = check_for_update(&h).await;
+                            update_config(&h, |c| c.last_message = Some(message));
+                            emit_status(&h);
+                        });
+                    }
                     "upload" => {
                         let h = app.clone();
                         tauri::async_runtime::spawn(async move { sync_once(&h, true).await });
