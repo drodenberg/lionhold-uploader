@@ -31,6 +31,9 @@ struct Config {
     /// SavedVariables path -> modified time already uploaded, so each logout uploads once.
     uploaded: HashMap<String, u64>,
     autostart_set: bool,
+    /// Whether the player lets their guild see their bags (an account-wide setting on the site).
+    #[serde(default)]
+    share: Option<bool>,
 }
 
 struct AppState {
@@ -49,6 +52,7 @@ struct Status {
     last_upload_at: Option<u64>,
     last_message: Option<String>,
     linking_code: Option<String>,
+    share: Option<bool>,
 }
 
 fn now() -> u64 {
@@ -288,11 +292,12 @@ struct PollResponse {
 #[derive(Deserialize)]
 struct MeResponse {
     battletag: Option<String>,
+    share: Option<bool>,
 }
 
-async fn fetch_battletag(key: &str) -> Option<String> {
+async fn fetch_me(key: &str) -> Option<MeResponse> {
     let r = http().get(format!("{SITE}/api/uploader/me")).bearer_auth(key).send().await.ok()?;
-    r.json::<MeResponse>().await.ok()?.battletag
+    r.json::<MeResponse>().await.ok()
 }
 
 // ---------- status for the window and tray ----------
@@ -316,6 +321,7 @@ fn status(app: &AppHandle) -> Status {
         last_upload_at: cfg.last_upload_at,
         last_message: cfg.last_message.clone(),
         linking_code,
+        share: cfg.share,
     }
 }
 
@@ -368,6 +374,28 @@ async fn upload_now(app: AppHandle) -> Status {
     status(&app)
 }
 
+/// The "Let my guild see my bags" switch. Applies to every character on the account, now and later.
+#[tauri::command]
+async fn set_share(app: AppHandle, share: bool) -> Result<Status, String> {
+    let key = upload_key().ok_or("Connect this computer first.")?;
+    let r = http()
+        .post(format!("{SITE}/api/uploader/share"))
+        .bearer_auth(&key)
+        .json(&serde_json::json!({ "share": share }))
+        .send()
+        .await
+        .map_err(|_| "Couldn't reach Lionhold Armory.".to_string())?;
+    if !r.status().is_success() {
+        return Err("Couldn't change sharing. Try again.".into());
+    }
+    update_config(&app, |c| {
+        c.share = Some(share);
+        c.last_message = Some(if share { "Your guild can now see your bags." } else { "Your bags are private." }.into());
+    });
+    emit_status(&app);
+    Ok(status(&app))
+}
+
 #[tauri::command]
 fn disconnect(app: AppHandle) -> Status {
     clear_upload_key();
@@ -418,9 +446,12 @@ async fn connect(app: AppHandle) -> Result<String, String> {
                 ("approved", Some(key)) => {
                     result = match set_upload_key(&key) {
                         Ok(_) => {
-                            let tag = fetch_battletag(&key).await;
-                            update_config(&handle, |c| c.battletag = tag);
-                            "Connected. Your bags upload after every logout.".to_string()
+                            let me = fetch_me(&key).await;
+                            update_config(&handle, |c| {
+                                c.battletag = me.as_ref().and_then(|m| m.battletag.clone());
+                                c.share = me.as_ref().and_then(|m| m.share);
+                            });
+                            "Connected. Your bags upload after every logout. Choose below whether your guild can see them.".to_string()
                         }
                         Err(e) => e,
                     };
@@ -469,6 +500,14 @@ async fn background(app: AppHandle) {
             update_config(&app, |c| c.last_message = Some(message));
         }
     }
+    if let Some(key) = upload_key() {
+        if let Some(me) = fetch_me(&key).await {
+            update_config(&app, |c| {
+                c.battletag = me.battletag.or(c.battletag.clone());
+                c.share = me.share;
+            });
+        }
+    }
     emit_status(&app);
     loop {
         sync_once(&app, false).await;
@@ -499,7 +538,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![get_status, set_wow_dir, upload_now, disconnect, connect])
+        .invoke_handler(tauri::generate_handler![get_status, set_wow_dir, upload_now, disconnect, connect, set_share])
         .setup(|app| {
             let handle = app.handle().clone();
             app.manage(AppState { config: Mutex::new(load_config(&handle)), linking: Mutex::new(None) });

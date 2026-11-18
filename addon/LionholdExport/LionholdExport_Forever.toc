@@ -2,7 +2,7 @@
 ## Title: Lionhold Export
 ## Notes: Saves your bags, bank and equipped gear so you can upload them to Lionhold Armory. Type /lionhold.
 ## Author: Lionhold Armory
-## Version: 1.0.2
+## Version: 1.0.3
 ## SavedVariables: LionholdExportDB
 
 LionholdExport.lua

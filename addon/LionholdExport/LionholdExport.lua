@@ -131,6 +131,26 @@ local function scanMoney()
   return true
 end
 
+-- Currencies (Merchant's Favor and any others), from the currency tab. Feature-detected: older clients lack the API.
+local function hasCurrencyApi()
+  return C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize and C_CurrencyInfo.GetCurrencyListInfo
+end
+local function scanCurrencies()
+  if not hasCurrencyApi() then return false end
+  local list = {}
+  for i = 1, C_CurrencyInfo.GetCurrencyListSize() or 0 do
+    local info = C_CurrencyInfo.GetCurrencyListInfo(i)
+    if info and not info.isHeader and info.name and (info.quantity or 0) > 0 then
+      list[#list + 1] = clean(info.name) .. "\t" .. (info.quantity or 0)
+    end
+  end
+  local c = character()
+  if not c then return false end
+  c.currencies = list
+  c.currenciesAt = time()
+  return true
+end
+
 local B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local function base64(data)
   local out = {}
@@ -154,6 +174,7 @@ end
 --   K where(bags|bank) bagId size        (a container)
 --   I where bagId slot itemId count quality name
 --   E slot itemId quality name
+--   M name quantity                       (a currency)
 local function buildExport()
   local db = LionholdExportDB
   if not db or not db.chars then return nil end
@@ -172,6 +193,9 @@ local function buildExport()
     for _, item in ipairs(c.equipped or {}) do
       lines[#lines + 1] = "E\t" .. item
     end
+    for _, currency in ipairs(c.currencies or {}) do
+      lines[#lines + 1] = "M\t" .. currency
+    end
   end
   db.export = FORMAT .. ":" .. base64(table.concat(lines, "\n"))
   db.exportAt = time()
@@ -182,6 +206,7 @@ local function scanAll()
   scanBags()
   scanEquipment()
   scanMoney()
+  scanCurrencies()
 end
 
 -- A small window with the export string selected, ready to copy (Ctrl/Cmd+C).
@@ -245,6 +270,7 @@ frame:RegisterEvent("BANKFRAME_OPENED")
 frame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
 frame:RegisterEvent("PLAYER_GUILD_UPDATE")
 frame:RegisterEvent("PLAYER_MONEY")
+pcall(frame.RegisterEvent, frame, "CURRENCY_DISPLAY_UPDATE")
 frame:RegisterEvent("PLAYER_LOGOUT")
 local bankOpen = false
 frame:SetScript("OnEvent", function(_, event)
@@ -261,6 +287,8 @@ frame:SetScript("OnEvent", function(_, event)
     character()
   elseif event == "PLAYER_MONEY" then
     scanMoney()
+  elseif event == "CURRENCY_DISPLAY_UPDATE" then
+    scanCurrencies()
   elseif event == "BANKFRAME_OPENED" then
     bankOpen = true
     after(0.5, scanBank)
@@ -292,7 +320,8 @@ SlashCmdList.LIONHOLD = function(msg)
       ", saved bags " .. ((c and c.bagsAt) and date("%H:%M:%S", c.bagsAt) or "never") ..
       ", bank " .. ((c and c.bankAt) and date("%H:%M:%S", c.bankAt) or "never") ..
       ", gear " .. ((c and c.equipAt) and date("%H:%M:%S", c.equipAt) or "never") ..
-      ", guild " .. ((c and c.guild ~= "" and c.guild) or "none"))
+      ", guild " .. ((c and c.guild ~= "" and c.guild) or "none") ..
+      ", currency API " .. (hasCurrencyApi() and ("yes, " .. #((c and c.currencies) or {}) .. " saved") or "not in this client"))
   else
     local c = character()
     local db = LionholdExportDB

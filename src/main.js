@@ -34,6 +34,8 @@ function render(s) {
   $("connect").disabled = linking;
   $("connect").textContent = linking ? "Waiting for approval…" : "Connect";
   $("disconnect").hidden = !s.connected;
+  $("share-row").hidden = !s.connected;
+  $("share").checked = !!s.share;
 
   $("dot-upload").className = `dot ${s.lastUploadAt ? "ok" : "wait"}`;
   $("upload-text").textContent = s.lastUploadAt
@@ -60,6 +62,15 @@ $("connect").addEventListener("click", async () => {
     await invoke("connect");
   } catch (e) {
     $("message").textContent = String(e);
+    $("message").className = "small error";
+  }
+});
+$("share").addEventListener("change", async (e) => {
+  try {
+    render(await invoke("set_share", { share: e.target.checked }));
+  } catch (err) {
+    e.target.checked = !e.target.checked;
+    $("message").textContent = String(err);
     $("message").className = "small error";
   }
 });

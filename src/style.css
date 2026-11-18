@@ -55,3 +55,6 @@ button.secondary { background: var(--card); color: var(--parchment); border-colo
 button.secondary:hover { border-color: var(--gold); }
 button.link { background: none; color: var(--muted); padding: 0; min-height: 24px; font-weight: 400; text-decoration: underline; }
 footer { margin-top: 14px; }
+.share { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.share input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--gold); }
+.share span { display: flex; flex-direction: column; gap: 2px; }
