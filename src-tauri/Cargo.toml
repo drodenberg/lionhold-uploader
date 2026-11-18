@@ -1,0 +1,37 @@
+[package]
+name = "lionhold-uploader"
+version = "0.1.0"
+description = "Uploads your WoW Forever bags to Lionhold Armory after every logout"
+edition = "2021"
+
+[lib]
+name = "lionhold_uploader_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-process = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+keyring = { version = "3", features = ["apple-native", "windows-native"] }
+dirs = "6"
+glob = "0.3"
+gethostname = "1"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

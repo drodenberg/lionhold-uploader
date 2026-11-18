@@ -1,0 +1,85 @@
+# Builds the Windows and Mac installers and publishes a GitHub release, including latest.json for self-updates.
+# Run: bump the version in src-tauri/tauri.conf.json and package.json, then push a tag like v0.1.1.
+#
+# Secrets:
+#   TAURI_SIGNING_PRIVATE_KEY           update signing key (required; updates are verified against the app's pubkey)
+#   APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
+#   APPLE_API_ISSUER, APPLE_API_KEY, APPLE_API_KEY_P8   Mac signing + notarization (optional; unsigned until set)
+#   Windows signing (SignPath) is added once the project is accepted.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+          - platform: windows-latest
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    env:
+      HAS_APPLE: ${{ secrets.APPLE_CERTIFICATE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Notarization key file
+        if: matrix.platform == 'macos-latest' && env.HAS_APPLE == 'true'
+        run: echo "${{ secrets.APPLE_API_KEY_P8 }}" > "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Build (signed)
+        if: matrix.platform == 'macos-latest' && env.HAS_APPLE == 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+        with:
+          tagName: v__VERSION__
+          releaseName: Lionhold Uploader v__VERSION__
+          releaseBody: Download from https://lionhold-armory.drodenberg92.workers.dev/uploader
+          args: ${{ matrix.args }}
+          includeUpdaterJson: true
+
+      - name: Build
+        if: matrix.platform != 'macos-latest' || env.HAS_APPLE != 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        with:
+          tagName: v__VERSION__
+          releaseName: Lionhold Uploader v__VERSION__
+          releaseBody: Download from https://lionhold-armory.drodenberg92.workers.dev/uploader
+          args: ${{ matrix.args }}
+          includeUpdaterJson: true

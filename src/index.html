@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lionhold Uploader</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <svg width="30" height="34" viewBox="0 0 34 38" aria-hidden="true">
+        <path d="M17 2 L31 7 V18 C31 27 25 33 17 36 C9 33 3 27 3 18 V7 Z" fill="#1a1712" stroke="#d4a84a" stroke-width="2" />
+        <path d="M11 14 L17 10 L23 14 L21 24 L17 28 L13 24 Z" fill="none" stroke="#d4a84a" stroke-width="1.6" />
+      </svg>
+      <div>
+        <h1>Lionhold Uploader</h1>
+        <p class="muted">Sends your bags to Lionhold Armory after every logout.</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="step" id="step-wow">
+        <div class="row">
+          <span class="dot" id="dot-wow"></span>
+          <div class="grow">
+            <h2>World of Warcraft</h2>
+            <p id="wow-text" class="muted">Looking for your WoW folder…</p>
+            <p id="addon-text" class="muted small"></p>
+          </div>
+        </div>
+        <button id="choose" class="secondary">Choose folder…</button>
+      </section>
+
+      <section class="step" id="step-account">
+        <div class="row">
+          <span class="dot" id="dot-account"></span>
+          <div class="grow">
+            <h2>Your account</h2>
+            <p id="account-text" class="muted">Not connected.</p>
+            <p id="code-text" class="code" hidden></p>
+          </div>
+        </div>
+        <button id="connect">Connect</button>
+        <button id="disconnect" class="link" hidden>Disconnect this computer</button>
+      </section>
+
+      <section class="step">
+        <div class="row">
+          <span class="dot" id="dot-upload"></span>
+          <div class="grow">
+            <h2>Uploads</h2>
+            <p id="upload-text" class="muted">Nothing uploaded yet. Log out of a character once.</p>
+            <p id="message" class="small"></p>
+          </div>
+        </div>
+        <button id="upload" class="secondary">Upload now</button>
+      </section>
+    </main>
+
+    <footer class="muted small">
+      Runs in the tray and starts with your computer. Closing this window keeps it running. <span id="version"></span>
+    </footer>
+    <script src="main.js"></script>
+  </body>
+</html>

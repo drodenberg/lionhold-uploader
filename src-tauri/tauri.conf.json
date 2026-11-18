@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Lionhold Uploader",
+  "version": "0.1.0",
+  "identifier": "com.lionholdarmory.uploader",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Lionhold Uploader",
+        "width": 440,
+        "height": 600,
+        "resizable": false,
+        "visible": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "dmg", "app"],
+    "createUpdaterArtifacts": true,
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "shortDescription": "Uploads your WoW Forever bags to Lionhold Armory",
+    "macOS": { "minimumSystemVersion": "11.0" },
+    "windows": { "nsis": { "installMode": "currentUser" } }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNBNkI2MzQ5ODBCNzJFRDUKUldUVkxyZUFTV05yT3NweDBpdXFSMTFIV3VEWEpYeGU0RUtiREFseFpOVHBEZXJuaFBzMHg2UEEK",
+      "endpoints": ["https://lionhold-armory.drodenberg92.workers.dev/uploader/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  }
+}
