@@ -518,8 +518,13 @@ async fn background(app: AppHandle) {
 }
 
 fn set_update_label(app: &AppHandle, text: &str) {
-    let state: State<AppState> = app.state();
-    if let Some(item) = state.update_item.lock().unwrap().as_ref() {
+    // Clone the item out so the lock is released before touching the menu.
+    let item = {
+        let state: State<AppState> = app.state();
+        let guard = state.update_item.lock().unwrap();
+        guard.clone()
+    };
+    if let Some(item) = item {
         let _ = item.set_text(text);
     }
 }
