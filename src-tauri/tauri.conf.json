@@ -25,18 +25,38 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "dmg", "app"],
+    "targets": [
+      "nsis",
+      "dmg",
+      "app"
+    ],
     "createUpdaterArtifacts": true,
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "shortDescription": "Uploads your WoW Forever bags to Lionhold Armory",
-    "macOS": { "minimumSystemVersion": "11.0" },
-    "windows": { "nsis": { "installMode": "currentUser" } }
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNBNkI2MzQ5ODBCNzJFRDUKUldUVkxyZUFTV05yT3NweDBpdXFSMTFIV3VEWEpYeGU0RUtiREFseFpOVHBEZXJuaFBzMHg2UEEK",
-      "endpoints": ["https://lionhold-armory.drodenberg92.workers.dev/uploader/latest.json"],
-      "windows": { "installMode": "passive" }
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwRkEwOUI0QUI5OEQwNzUKUldSMTBKaXJ0QW42c05SeU5LOGQra2YwZ1pmaDhBVjNpQ3Q5NENMUVhEUHVIZklCSVV1cFhvK1EK",
+      "endpoints": [
+        "https://lionhold-armory.drodenberg92.workers.dev/uploader/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }
