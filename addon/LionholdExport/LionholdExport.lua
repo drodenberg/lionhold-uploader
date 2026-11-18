@@ -120,6 +120,17 @@ local function scanEquipment()
   return true
 end
 
+-- Gold, in copper. Read during play only (like bags, it isn't trustworthy while logging out).
+local function scanMoney()
+  local money = GetMoney and GetMoney()
+  if money == nil then return false end
+  local c = character()
+  if not c then return false end
+  c.money = money
+  c.moneyAt = time()
+  return true
+end
+
 local B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local function base64(data)
   local out = {}
@@ -139,7 +150,7 @@ local function base64(data)
 end
 
 -- One line per record, tab separated:
---   C guid name level class race faction realm guild bagsAt bankAt equipAt
+--   C guid name level class race faction realm guild bagsAt bankAt equipAt money moneyAt
 --   K where(bags|bank) bagId size        (a container)
 --   I where bagId slot itemId count quality name
 --   E slot itemId quality name
@@ -149,7 +160,7 @@ local function buildExport()
   local lines = { FORMAT }
   for guid, c in pairs(db.chars) do
     lines[#lines + 1] = table.concat({ "C", guid, clean(c.name), c.level or 0, c.class or "", c.race or "", c.faction or "",
-      clean(c.realm), clean(c.guild), c.bagsAt or 0, c.bankAt or 0, c.equipAt or 0 }, "\t")
+      clean(c.realm), clean(c.guild), c.bagsAt or 0, c.bankAt or 0, c.equipAt or 0, c.money or -1, c.moneyAt or 0 }, "\t")
     for _, where in ipairs({ "bags", "bank" }) do
       for _, container in ipairs(c[where] or {}) do
         lines[#lines + 1] = table.concat({ "K", where, container.bag, container.size }, "\t")
@@ -170,6 +181,7 @@ end
 local function scanAll()
   scanBags()
   scanEquipment()
+  scanMoney()
 end
 
 -- A small window with the export string selected, ready to copy (Ctrl/Cmd+C).
@@ -232,6 +244,7 @@ frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 frame:RegisterEvent("BANKFRAME_OPENED")
 frame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
 frame:RegisterEvent("PLAYER_GUILD_UPDATE")
+frame:RegisterEvent("PLAYER_MONEY")
 frame:RegisterEvent("PLAYER_LOGOUT")
 local bankOpen = false
 frame:SetScript("OnEvent", function(_, event)
@@ -246,6 +259,8 @@ frame:SetScript("OnEvent", function(_, event)
     scanEquipment()
   elseif event == "PLAYER_GUILD_UPDATE" then
     character()
+  elseif event == "PLAYER_MONEY" then
+    scanMoney()
   elseif event == "BANKFRAME_OPENED" then
     bankOpen = true
     after(0.5, scanBank)
