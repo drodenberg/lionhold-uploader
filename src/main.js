@@ -18,7 +18,7 @@ function render(s) {
 
   $("dot-wow").className = `dot ${s.wowDir ? "ok" : "bad"}`;
   $("wow-text").textContent = s.wowDir ?? "Couldn't find WoW. Choose the main \"World of Warcraft\" folder.";
-  $("addon-text").textContent = s.wowDir ? `Lionhold Export addon: ${s.addon}` : "";
+  $("addon-text").textContent = s.wowDir ? `Armory Hall addon: ${s.addon}` : "";
   $("choose").textContent = s.wowDir ? "Change folder…" : "Choose folder…";
 
   const linking = !!s.linkingCode;
@@ -27,7 +27,7 @@ function render(s) {
     ? `Connected${s.battletag ? ` as ${s.battletag}` : ""}.`
     : linking
       ? "Finish in your browser: click \"Connect this computer\". The page shows this code:"
-      : "Not connected. Connect opens Lionhold Armory; sign in with Battle.net and approve.";
+      : "Not connected. Connect opens Armory Hall; sign in with Battle.net and approve.";
   $("code-text").hidden = !linking;
   $("code-text").textContent = s.linkingCode ?? "";
   $("connect").hidden = s.connected;

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Lionhold Uploader",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "identifier": "com.lionholdarmory.uploader",
   "build": {
     "frontendDist": "../src"
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Lionhold Uploader",
+        "title": "Armory Hall Uploader",
         "width": 440,
         "height": 600,
         "resizable": false,
@@ -38,7 +38,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "shortDescription": "Uploads your WoW Forever bags to Lionhold Armory",
+    "shortDescription": "Uploads your WoW Forever bags to Armory Hall",
     "macOS": {
       "minimumSystemVersion": "11.0"
     },
@@ -52,6 +52,8 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwRkEwOUI0QUI5OEQwNzUKUldSMTBKaXJ0QW42c05SeU5LOGQra2YwZ1pmaDhBVjNpQ3Q5NENMUVhEUHVIZklCSVV1cFhvK1EK",
       "endpoints": [
+        "https://github.com/drodenberg/lionhold-uploader/releases/latest/download/latest.json",
+        "https://armoryhall.app/uploader/latest.json",
         "https://lionhold-armory.drodenberg92.workers.dev/uploader/latest.json"
       ],
       "windows": {

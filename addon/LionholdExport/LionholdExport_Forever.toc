@@ -1,8 +1,8 @@
 ## Interface: 16001
-## Title: Lionhold Export
-## Notes: Saves your bags, bank and equipped gear so you can upload them to Lionhold Armory. Type /lionhold.
-## Author: Lionhold Armory
-## Version: 1.0.3
+## Title: Armory Hall
+## Notes: Saves your bags, bank and equipped gear so you can upload them to Armory Hall (armoryhall.app). Type /armoryhall.
+## Author: Armory Hall
+## Version: 1.0.4
 ## SavedVariables: LionholdExportDB
 
 LionholdExport.lua

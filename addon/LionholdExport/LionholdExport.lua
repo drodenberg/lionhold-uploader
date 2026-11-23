@@ -1,5 +1,5 @@
--- Lionhold Export: records bags, bank and equipped gear for each character, and builds one export string
--- ("LHX1:" + base64) that Lionhold Armory reads, either pasted or from this addon's SavedVariables file.
+-- Armory Hall addon (folder and saved data keep the old LionholdExport name): records bags, bank and equipped gear for each character, and builds one export string
+-- ("LHX1:" + base64) that Armory Hall reads, either pasted or from this addon's SavedVariables file.
 -- Nothing leaves the game by itself; addons have no network access.
 
 local FORMAT = "LHX1"
@@ -234,7 +234,7 @@ local function showExport()
     end
     local title = exportFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOP", 0, -18)
-    title:SetText("Lionhold Export: press Ctrl+C (Cmd+C on Mac) to copy")
+    title:SetText("Armory Hall: press Ctrl+C (Cmd+C on Mac) to copy")
     local scroll = CreateFrame("ScrollFrame", "LionholdExportScroll", exportFrame, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", 20, -42)
     scroll:SetPoint("BOTTOMRIGHT", -40, 46)
@@ -307,6 +307,7 @@ frame:HookScript("OnEvent", function(_, event)
 end)
 
 SLASH_LIONHOLD1 = "/lionhold"
+SLASH_LIONHOLD2 = "/armoryhall"
 SlashCmdList.LIONHOLD = function(msg)
   msg = (msg or ""):lower():match("^%s*(.-)%s*$")
   if msg == "export" then
@@ -316,7 +317,7 @@ SlashCmdList.LIONHOLD = function(msg)
     local sizes = {}
     for bag = 0, NUM_BAGS do sizes[#sizes + 1] = tostring(GetNumSlots(bag) or "nil") end
     local c = character()
-    print("|cffd4a84aLionhold Export debug|r: API " .. api .. ", bag sizes " .. table.concat(sizes, "/") ..
+    print("|cffd4a84aArmory Hall debug|r: API " .. api .. ", bag sizes " .. table.concat(sizes, "/") ..
       ", saved bags " .. ((c and c.bagsAt) and date("%H:%M:%S", c.bagsAt) or "never") ..
       ", bank " .. ((c and c.bankAt) and date("%H:%M:%S", c.bankAt) or "never") ..
       ", gear " .. ((c and c.equipAt) and date("%H:%M:%S", c.equipAt) or "never") ..
@@ -327,10 +328,10 @@ SlashCmdList.LIONHOLD = function(msg)
     local db = LionholdExportDB
     local count = 0
     for _ in pairs(db and db.chars or {}) do count = count + 1 end
-    print("|cffd4a84aLionhold Export|r: " .. count .. " character(s) saved.")
+    print("|cffd4a84aArmory Hall|r: " .. count .. " character(s) saved.")
     if c and not c.bankAt then
       print("Visit a banker once on this character so its bank is included.")
     end
-    print("Type |cffffffff/lionhold export|r to copy your data, or upload the SavedVariables file at lionhold-armory.drodenberg92.workers.dev/me/bags after logging out.")
+    print("Type |cffffffff/armoryhall export|r to copy your data, or upload the SavedVariables file at armoryhall.app/me/bags after logging out.")
   end
 end

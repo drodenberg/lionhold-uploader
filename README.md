@@ -1,9 +1,9 @@
-# Lionhold Uploader
+# Armory Hall Uploader
 
 A small tray app that keeps your World of Warcraft Forever bags and bank up to date on
-[Lionhold Armory](https://lionhold-armory.drodenberg92.workers.dev/uploader).
+[Armory Hall](https://armoryhall.app/uploader).
 
-- Finds your World of Warcraft folder and installs the **Lionhold Export** addon (`addon/`).
+- Finds your World of Warcraft folder and installs the **Armory Hall** addon (`addon/`, folder `LionholdExport`).
 - You connect it once: it opens the website, you sign in with Battle.net and approve.
 - After every logout (or `/reload`) the game rewrites the addon's SavedVariables file; the uploader sends it.
 - Starts with your computer, lives in the tray, and updates itself.

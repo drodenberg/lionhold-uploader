@@ -66,8 +66,8 @@ jobs:
           APPLE_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
         with:
           tagName: v__VERSION__
-          releaseName: Lionhold Uploader v__VERSION__
-          releaseBody: Download from https://lionhold-armory.drodenberg92.workers.dev/uploader
+          releaseName: Armory Hall Uploader v__VERSION__
+          releaseBody: Download from https://armoryhall.app/uploader
           args: ${{ matrix.args }}
           includeUpdaterJson: true
           releaseDraft: true
@@ -81,8 +81,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: Lionhold Uploader v__VERSION__
-          releaseBody: Download from https://lionhold-armory.drodenberg92.workers.dev/uploader
+          releaseName: Armory Hall Uploader v__VERSION__
+          releaseBody: Download from https://armoryhall.app/uploader
           args: ${{ matrix.args }}
           includeUpdaterJson: true
           releaseDraft: true

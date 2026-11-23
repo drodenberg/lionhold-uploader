@@ -1,5 +1,5 @@
-//! Lionhold Uploader: keeps the Lionhold Export addon installed in WoW Forever, and uploads its saved file to
-//! Lionhold Armory whenever the game rewrites it (every logout and /reload). Lives in the tray; the window is only for
+//! Armory Hall Uploader: keeps the Armory Hall addon (folder LionholdExport) installed in WoW Forever, and uploads its saved file to
+//! Armory Hall whenever the game rewrites it (every logout and /reload). Lives in the tray; the window is only for
 //! setup and status.
 
 use serde::{Deserialize, Serialize};
@@ -14,9 +14,10 @@ use tauri::{AppHandle, Emitter, Manager, State, WindowEvent};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_updater::UpdaterExt;
 
-const SITE: &str = "https://lionhold-armory.drodenberg92.workers.dev";
+const SITE: &str = "https://armoryhall.app";
 const ADDON_TOC: &str = include_str!("../../addon/LionholdExport/LionholdExport_Forever.toc");
 const ADDON_LUA: &str = include_str!("../../addon/LionholdExport/LionholdExport.lua");
+// Kept from the Lionhold days: changing it would lose every saved upload key.
 const KEYRING_SERVICE: &str = "Lionhold Uploader";
 const KEYRING_USER: &str = "upload-key";
 const CHECK_EVERY: Duration = Duration::from_secs(15);
@@ -267,7 +268,7 @@ async fn sync_once(app: &AppHandle, force: bool) {
                 }
                 Err(_) => "The site sent an unexpected reply. Will retry.".to_string(),
             },
-            Err(_) => "Couldn't reach Lionhold Armory. Will retry.".to_string(),
+            Err(_) => "Couldn't reach Armory Hall. Will retry.".to_string(),
         };
         update_config(app, |c| c.last_message = Some(message));
     }
@@ -330,10 +331,10 @@ fn status(app: &AppHandle) -> Status {
 fn emit_status(app: &AppHandle) {
     let s = status(app);
     let tip = match (&s.battletag, s.connected, s.wow_dir.is_some()) {
-        (_, _, false) => "Lionhold Uploader: choose your WoW folder".to_string(),
-        (_, false, _) => "Lionhold Uploader: not connected".to_string(),
-        (Some(tag), true, _) => format!("Lionhold Uploader: connected as {tag}"),
-        (None, true, _) => "Lionhold Uploader: connected".to_string(),
+        (_, _, false) => "Armory Hall Uploader: choose your WoW folder".to_string(),
+        (_, false, _) => "Armory Hall Uploader: not connected".to_string(),
+        (Some(tag), true, _) => format!("Armory Hall Uploader: connected as {tag}"),
+        (None, true, _) => "Armory Hall Uploader: connected".to_string(),
     };
     if let Some(tray) = app.tray_by_id("main") {
         let _ = tray.set_tooltip(Some(&tip));
@@ -386,7 +387,7 @@ async fn set_share(app: AppHandle, share: bool) -> Result<Status, String> {
         .json(&serde_json::json!({ "share": share }))
         .send()
         .await
-        .map_err(|_| "Couldn't reach Lionhold Armory.".to_string())?;
+        .map_err(|_| "Couldn't reach Armory Hall.".to_string())?;
     if !r.status().is_success() {
         return Err("Couldn't change sharing. Try again.".into());
     }
@@ -418,10 +419,10 @@ async fn connect(app: AppHandle) -> Result<String, String> {
         .json(&serde_json::json!({ "name": name }))
         .send()
         .await
-        .map_err(|_| "Couldn't reach Lionhold Armory. Check your internet connection.".to_string())?
+        .map_err(|_| "Couldn't reach Armory Hall. Check your internet connection.".to_string())?
         .json()
         .await
-        .map_err(|_| "Unexpected reply from Lionhold Armory.".to_string())?;
+        .map_err(|_| "Unexpected reply from Armory Hall.".to_string())?;
     {
         let state: State<AppState> = app.state();
         *state.linking.lock().unwrap() = Some(started.user_code.clone());
@@ -599,7 +600,7 @@ pub fn run() {
             let version = MenuItem::with_id(
                 app,
                 "version",
-                format!("Lionhold Uploader {}", app.package_info().version),
+                format!("Armory Hall Uploader {}", app.package_info().version),
                 false,
                 None::<&str>,
             )?;
@@ -609,7 +610,7 @@ pub fn run() {
                 *state.update_item.lock().unwrap() = Some(updates.clone());
             }
             let upload = MenuItem::with_id(app, "upload", "Upload now", true, None::<&str>)?;
-            let site = MenuItem::with_id(app, "site", "Open Lionhold Armory", true, None::<&str>)?;
+            let site = MenuItem::with_id(app, "site", "Open Armory Hall", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(
@@ -627,7 +628,7 @@ pub fn run() {
             )?;
             TrayIconBuilder::with_id("main")
                 .icon(app.default_window_icon().cloned().expect("app icon"))
-                .tooltip("Lionhold Uploader")
+                .tooltip("Armory Hall Uploader")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "updates" => {
